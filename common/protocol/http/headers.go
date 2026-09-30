@@ -10,30 +10,34 @@ import (
 	"github.com/xtls/xray-core/common/net"
 )
 
-// ApplyTrustedXForwardedFor returns remoteAddr overridden by X-Forwarded-For only when a configured trusted header is present.
+// ApplyTrustedXForwardedFor returns remoteAddr overridden by X-Forwarded-For.
+// When "sockopt.trustedXForwardedFor" is configured, the header is only honored if one of the
+// trusted header names is present. When it is not configured at all, X-Forwarded-For is trusted
+// implicitly (pre-v26.6.18 behavior, kept for backward compatibility).
 func ApplyTrustedXForwardedFor(header http.Header, trusted []string, remoteAddr net.Addr) net.Addr {
 	value := header.Get("X-Forwarded-For")
 	if value == "" {
 		return remoteAddr
 	}
+	honored := len(trusted) == 0
 	for _, t := range trusted {
 		if len(header.Values(t)) > 0 {
-			if idx := strings.IndexByte(value, ','); idx >= 0 {
-				value = value[:idx]
-			}
-			if addr := net.ParseAddress(value); addr.Family().IsIP() {
-				return &net.TCPAddr{
-					IP:   addr.IP(),
-					Port: 0,
-				}
-			}
-			return remoteAddr
+			honored = true
+			break
 		}
 	}
-	if len(trusted) == 0 {
-		errors.LogWarning(context.Background(), `received "X-Forwarded-For" from `, remoteAddr, ` but "sockopt.trustedXForwardedFor" is not configured; ignoring it and using the real remote address`)
-	} else {
+	if !honored {
 		errors.LogError(context.Background(), `ignored potentially forged "X-Forwarded-For" from `, remoteAddr, `: `, value)
+		return remoteAddr
+	}
+	if idx := strings.IndexByte(value, ','); idx >= 0 {
+		value = value[:idx]
+	}
+	if addr := net.ParseAddress(value); addr.Family().IsIP() {
+		return &net.TCPAddr{
+			IP:   addr.IP(),
+			Port: 0,
+		}
 	}
 	return remoteAddr
 }

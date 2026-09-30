@@ -1,7 +1,6 @@
 package conf
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -113,11 +112,8 @@ func (c *REALITYConfig) Build() (proto.Message, error) {
 					config.MinClientVer[i] = byte(u)
 				}
 			}
-			// errors.LogWarning(context.Background(), `REALITY: Changing "minClientVer" will increase the likelihood of your server's IP being blocked by the GFW`)
-		} else {
-			// config.MinClientVer = []byte{26, 3, 27} // change it at your own risk: https://github.com/XTLS/Xray-core/commit/af7eb68028732a8ee3c0e5d6ab2b8a657bb2e770
-			// errors.LogWarning(context.Background(), `REALITY: The default minimal client version is Xray-core v26.3.27, other clients may be refused to connect`)
 		}
+		// No default "minClientVer": restored pre-v26.7.11 behavior, all client versions are accepted.
 		if c.MaxClientVer != "" {
 			config.MaxClientVer = make([]byte, 3)
 			var u uint64
@@ -160,13 +156,8 @@ func (c *REALITYConfig) Build() (proto.Message, error) {
 			}
 		}
 
-		for _, sn := range config.ServerNames {
-			sn = strings.ToLower(sn)
-			if strings.HasSuffix(sn, ".ru") || strings.HasSuffix(sn, ".ir") || strings.HasSuffix(sn, ".cn") ||
-				strings.Contains(sn, "apple") || strings.Contains(sn, "icloud") || strings.Contains(sn, "microsoft") {
-				errors.LogWarning(context.Background(), `REALITY: Choosing "`, sn, `" as the target will increase the likelihood of your server's IP being blocked by the GFW`)
-			}
-		}
+		// REALITY target warnings (apple/icloud/microsoft, .ru/.ir/.cn) removed:
+		// restored pre-v26.3.21 behavior.
 
 		config.LimitFallbackUpload = new(reality.LimitFallback)
 		config.LimitFallbackUpload.AfterBytes = c.LimitFallbackUpload.AfterBytes

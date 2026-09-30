@@ -175,10 +175,7 @@ func (c *InboundDetourConfig) Build() (*core.InboundHandlerConfig, error) {
 			return nil, err
 		}
 		receiverSettings.StreamSettings = ss
-		if strings.Contains(ss.SecurityType, "reality") && (receiverSettings.PortList == nil ||
-			len(receiverSettings.PortList.Ports()) != 1 || receiverSettings.PortList.Ports()[0] != 443) {
-			errors.LogWarning(context.Background(), `REALITY: Listening on non-443 ports will increase the likelihood of your server's IP being blocked by the GFW`)
-		}
+		// REALITY non-443 port warning removed: restored pre-v26.3.21 behavior.
 	}
 	if c.SniffingConfig != nil {
 		s, err := c.SniffingConfig.Build()
@@ -220,40 +217,6 @@ type OutboundDetourConfig struct {
 	ProxySettings  *json.RawMessage `json:"proxySettings"`
 	MuxSettings    *MuxConfig       `json:"mux"`
 	TargetStrategy string           `json:"targetStrategy"`
-}
-
-func requiresTransportSecurity(address *Address) bool {
-	if address == nil || address.Address == nil {
-		return false
-	}
-	if address.Family().IsIP() {
-		return !geodata.GetPrivateIPMatcher().Match(address.IP())
-	}
-	domain := strings.TrimSuffix(strings.ToLower(address.Domain()), ".")
-	return !geodata.GetPrivateDomainMatcher().MatchAny(domain)
-}
-
-func validateOutboundTransportSecurity(rawConfig interface{}, senderSettings *proxyman.SenderConfig) error {
-	if senderSettings.StreamSettings != nil && senderSettings.StreamSettings.GetSecurityType() != "" {
-		return nil
-	}
-
-	if vlessCfg, ok := rawConfig.(*VLessOutboundConfig); ok {
-		if vlessCfg.Encryption != "" && vlessCfg.Encryption != "none" {
-			return nil
-		}
-		if requiresTransportSecurity(vlessCfg.Address) {
-			return errors.New("vless without TLS or other encryption is prohibited unless the server address is a private IP or domain")
-		}
-	}
-
-	if tjCfg, ok := rawConfig.(*TrojanClientConfig); ok {
-		if requiresTransportSecurity(tjCfg.Servers[0].Address) {
-			return errors.New("trojan without TLS is prohibited unless the server address is a private IP or domain")
-		}
-	}
-
-	return nil
 }
 
 // Build implements Buildable.
@@ -333,9 +296,6 @@ func (c *OutboundDetourConfig) Build() (*core.OutboundHandlerConfig, error) {
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
 		return nil, errors.New("failed to build outbound handler for protocol ", c.Protocol).Base(err)
-	}
-	if err := validateOutboundTransportSecurity(rawConfig, senderSettings); err != nil {
-		return nil, err
 	}
 
 	if fc, ok := ts.(*freedom.Config); ok {

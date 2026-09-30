@@ -15,11 +15,21 @@ import (
 func TestApplyTrustedXForwardedFor(t *testing.T) {
 	remoteAddr := &gonet.TCPAddr{IP: gonet.ParseIP("127.0.0.1"), Port: 12345}
 
-	t.Run("ignore X-Forwarded-For without trusted header", func(t *testing.T) {
+	t.Run("trust X-Forwarded-For implicitly when trustedXForwardedFor is unset", func(t *testing.T) {
 		header := http.Header{}
 		header.Add("X-Forwarded-For", "129.78.138.66, 129.78.64.103")
 
-		if addr := ApplyTrustedXForwardedFor(header, nil, remoteAddr); addr != remoteAddr {
+		addr := ApplyTrustedXForwardedFor(header, nil, remoteAddr)
+		if addr.String() != "129.78.138.66:0" {
+			t.Fatalf("unexpected remote address: %v", addr)
+		}
+	})
+
+	t.Run("ignore X-Forwarded-For when trusted header is absent", func(t *testing.T) {
+		header := http.Header{}
+		header.Add("X-Forwarded-For", "129.78.138.66, 129.78.64.103")
+
+		if addr := ApplyTrustedXForwardedFor(header, []string{"X-Trusted-CDN"}, remoteAddr); addr != remoteAddr {
 			t.Fatalf("unexpected remote address: %v", addr)
 		}
 	})

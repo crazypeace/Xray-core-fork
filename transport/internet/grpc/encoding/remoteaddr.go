@@ -41,20 +41,23 @@ func parseTrustedXForwardedFor(md metadata.MD, trusted []string, remoteAddr net.
 		return nil
 	}
 	value := values[0]
+	// When "sockopt.trustedXForwardedFor" is not configured at all, X-Forwarded-For is
+	// trusted implicitly (pre-v26.6.18 behavior, kept for backward compatibility).
+	honored := len(trusted) == 0
 	for _, t := range trusted {
 		if len(md.Get(t)) > 0 {
-			if idx := strings.IndexByte(value, ','); idx >= 0 {
-				value = value[:idx]
-			}
-			return net.ParseAddress(value)
+			honored = true
+			break
 		}
 	}
-	if len(trusted) == 0 {
-		errors.LogWarning(context.Background(), `received "X-Forwarded-For" from `, remoteAddr, ` but "sockopt.trustedXForwardedFor" is not configured; ignoring it and using the real remote address`)
-	} else {
+	if !honored {
 		errors.LogError(context.Background(), `ignored potentially forged "X-Forwarded-For" from `, remoteAddr, `: `, value)
+		return nil
 	}
-	return nil
+	if idx := strings.IndexByte(value, ','); idx >= 0 {
+		value = value[:idx]
+	}
+	return net.ParseAddress(value)
 }
 
 func localAddrFromContext(ctx context.Context) net.Addr {

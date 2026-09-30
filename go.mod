@@ -63,3 +63,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+// Fork: revert REALITY ClientHello X25519MLKEM768 key_share requirement (xtls/reality 8cdf7bf)
+replace github.com/xtls/reality => ./third_party/reality

@@ -1,3 +1,14 @@
+# 修改
+基于 Xray-core v26.9.9 关闭以下限制
+
+REALITY 强制要求客户端在 ClientHello 里首个 key_share 必须是 X25519MLKEM768（0x11ec），后置可选的 X25519。缺少这个 key share 的客户端会被直接拒绝。
+
+7/7 (#6303)：VLESS 与 Trojan 禁止在公网 Internet 上使用未加密传输；
+
+XHTTP / WS / HU / gRPC 的 server 强制要求 sockopt.trustedXForwardedFor（6/18 #6309）
+
+REALITY server 默认 minClientVer: 26.3.27（7/11），并对 apple/icloud 目标或非 443 端口监听发出警告。
+
 # Project X
 
 [Project X](https://github.com/XTLS) originates from XTLS protocol, providing a set of network tools such as [Xray-core](https://github.com/XTLS/Xray-core) and [REALITY](https://github.com/XTLS/REALITY).

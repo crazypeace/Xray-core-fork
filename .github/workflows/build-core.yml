@@ -32,11 +32,15 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          # Pinned to the newest patch release rather than a range: '1.27.x'
-          # resolved to 1.27.1 when this workflow was first run, so the release
-          # shipped without the crypto/x509 fix that landed in 1.27.3. Pin the
-          # exact version and bump it when a new patch ships.
-          go-version: '1.27.3'
+          # A range, not a pin: setup-go fetches actions/go-versions@main live
+          # (no bundled manifest, no cache layer) and that list is ordered
+          # descending, so tool-cache's _findMatch returns the first match --
+          # i.e. the newest 1.27.x. That is what we want here: patch releases
+          # carry security fixes, and this is a proxy that verifies TLS.
+          # The tradeoff is that a commit is not bit-for-bit reproducible; the
+          # "Record Go version" step below makes each build's toolchain visible.
+          go-version: '1.27.x'
+          check-latest: true
           cache: false
 
       - name: Record Go version

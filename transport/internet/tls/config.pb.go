@@ -178,6 +178,8 @@ func (x *Certificate) GetBuildChain() bool {
 
 type Config struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether or not to skip TLS certificate verification.
+	AllowInsecure bool `protobuf:"varint,1,opt,name=allow_insecure,json=allowInsecure,proto3" json:"allow_insecure,omitempty"`
 	// List of certificates to be served on server.
 	Certificate []*Certificate `protobuf:"bytes,2,rep,name=certificate,proto3" json:"certificate,omitempty"`
 	// Override server name.
@@ -208,6 +210,13 @@ type Config struct {
 	PinnedPeerCertSha256 [][]byte               `protobuf:"bytes,22,rep,name=pinned_peer_cert_sha256,json=pinnedPeerCertSha256,proto3" json:"pinned_peer_cert_sha256,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
+}
+
+func (x *Config) GetAllowInsecure() bool {
+	if x != nil {
+		return x.AllowInsecure
+	}
+	return false
 }
 
 func (x *Config) Reset() {

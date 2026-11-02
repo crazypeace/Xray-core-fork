@@ -15,16 +15,21 @@ permissions:
 
 jobs:
   build:
-    name: Build linux/${{ matrix.goarch }}
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - goarch: amd64
+          - goos: linux
+            goarch: amd64
             ext: ''
-          - goarch: arm64
+          - goos: linux
+            goarch: arm64
             ext: ''
+          - goos: windows
+            goarch: amd64
+            ext: '.exe'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,20 +54,20 @@ jobs:
 
       - name: Build
         env:
-          GOOS: linux
+          GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: '0'
         run: |
           go build -trimpath \
             -ldflags "-s -w -buildid=" \
-            -o "xray-linux-${{ matrix.goarch }}" \
+            -o "xray-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}" \
             ./main
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: xray-linux-${{ matrix.goarch }}
-          path: xray-linux-${{ matrix.goarch }}
+          name: xray-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: xray-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
           if-no-files-found: error
 
       - name: Attach to release
@@ -71,5 +76,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${GITHUB_REF_NAME}" \
-            "xray-linux-${{ matrix.goarch }}" \
+            "xray-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}" \
             --clobber

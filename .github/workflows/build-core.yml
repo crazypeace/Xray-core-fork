@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           # A range, not a pin: setup-go fetches actions/go-versions@main live
           # (no bundled manifest, no cache layer) and that list is ordered
